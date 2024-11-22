@@ -9,6 +9,8 @@
 # result|gender  = female, drug = with; (sick, healed): [0.30, 0.70]
 import pyAgrum as gum
 import pyAgrum.lib.notebook as gnb
+import pyAgrum.causal as csl
+import pyAgrum.causal.notebook as cslnb
 #define the Bayesian Network, by putting the relation among variables
 m1 = gum.fastBN("Gender{F|M}->Drug{Without|With}->Patient{Sick|Healed}<-Gender")
 #define the probabilities of the net
@@ -32,9 +34,56 @@ gnb.flow.row(m1,m1.cpt("Gender"),m1.cpt("Drug"),m1.cpt("Patient"))
 def getCuredObservedProba(m1, evs):
     evs0 = dict(evs)           #we create a dictionary where we will save the probabilities
     evs1 = dict(evs)
-    evs0["Drug"]="Without" 
-    evs1["Drug"]="With"
-    return gum.Potential().add()
+    evs0["Drug"]="Without"  #aggiungo al path drug con attributi with e 
+    evs1["Drug"]="With"     #without
+    return( gum.Potential()
+            .add(m1.variablesFromName("Drug")) #I retrive the variables
+            .fillWith([gum.getPosterior(m1,target="Patient",evs=evs0)[1], #I retrive the probabilities
+                        gum.getPosterior(m1,target="Patient",evs=evs1)[1]
+              ])
+    )
+
+
+gnb.sideBySide(getCuredObservedProba(m1,{}),                   #crea le tabelle graficamente
+               getCuredObservedProba(m1,{'Gender':'F'}),
+               getCuredObservedProba(m1,{'Gender':'M'}),
+               captions=["$P(Patient = Healed \mid Drug )$<br/>Taking $Drug$ is observed as efficient to cure",
+                         "$P(Patient = Healed \mid Gender=F,Drug)$<br/>except if the $gender$ of the patient is female",
+                         "$P(Patient = Healed \mid Gender=M,Drug)$<br/>... or male."])
+
+
+
+d1 = csl.CausalModel(m1)   #costruisco il modello poi rappresentabile
+cslnb.showCausalModel(d1)
+
+
+
+cslnb.showCausalModel(d1, "Patient", doing="Drug", values={"Drug":"Without"} ) #crea anche la tabella
+
+#esercizio 2 
+#costruire una rete per il modello cloud, rain, sprinkler, grass wet
+m2 = gum.fastBN("Cloud{No|Yes}->Rain{No|Yes}->GrassWet{No|Yes}<-Sprinkler{No|Yes}<-Cloud")
+
+#definisco le probabilità
+
+m2.cpt("Cloud")[:]= [0.5, 0.5]                                         #inserisco i condizionamenti tipo dizionario
+m2.cpt("Rain")[{"Cloud":"Yes"}]=[0.2, 0.8]
+m2.cpt("Rain")[{"Cloud":"No"}]=[0.9, 0.1]
+m2.cpt("Sprinkler")[{"Cloud":"Yes"}]=[0.9, 0.1]
+m2.cpt("Sprinkler")[{"Cloud":"No"}]=[0.5, 0.5]
+m2.cpt("GrassWet")[{"Rain":"No","Sprinkler":"No"}]=[0.9, 0.1]
+m2.cpt("GrassWet")[{"Rain":"Yes","Sprinkler":"No"}]=[0.1, 0.9]
+m2.cpt("GrassWet")[{"Rain":"No","Sprinkler":"Yes"}]=[0.1, 0.9]
+m2.cpt("GrassWet")[{"Rain":"Yes","Sprinkler":"Yes"}]=[0.05, 0.95]
+
+print(m2.do("Rain", 1).target("Grasswet"))
+
+
+
+
+
+
+
 
 
 
