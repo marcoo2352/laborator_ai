@@ -76,12 +76,23 @@ m2.cpt("GrassWet")[{"Rain":"Yes","Sprinkler":"No"}]=[0.1, 0.9]
 m2.cpt("GrassWet")[{"Rain":"No","Sprinkler":"Yes"}]=[0.1, 0.9]
 m2.cpt("GrassWet")[{"Rain":"Yes","Sprinkler":"Yes"}]=[0.05, 0.95]
 
-print(m2.do("Rain", 1).target("Grasswet"))
+ie = gum.LazyPropagation(m2)
+ie.setEvidence({"Rain":"Yes"})
+result = ie.posterior("GrassWet")
+print(result)
 
 
+ie2 = gum.LazyPropagation(m2)
+ie2.setEvidence({"Sprinkler":"Yes"})
+result2 = ie2.posterior("GrassWet")
+print(result2)
 
+ie3 = gum.LazyPropagation(m2)
+ie3.setEvidence({"Sprinkler":"No"})
+result3 = ie3.posterior("GrassWet")
+print(result3)
 
-
+print(result2[1] - result3[1])
 
 
 
